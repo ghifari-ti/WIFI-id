@@ -44,7 +44,7 @@ class IndiHome {
         # DEBUG
         if($this->debug) echo json_encode($this->_header) . "\n";
         if(!empty($this->_header['location'][0])) {
-            $inbox = $this->http(sprintf($this->indiHome_AjaxLogin, $details['textNama']))->http($this->indiHome_Registration)->http($this->indiHome_Inbox)->_response;
+            $inbox = $this->http(sprintf($this->indiHome_AjaxLogin, $details['txtNama']))->http($this->indiHome_Registration)->http($this->indiHome_Inbox)->_response;
             preg_match_all("/style=\"color:black\">(.*)<\/a>/", $inbox, $out);
             if(empty($out[1][0])) throw new Exception("Umm... inbox is empty?");
             return $out[1][0];
@@ -68,7 +68,7 @@ class IndiHome {
         if(empty($profile)) throw new Exception("Can't get profile information.");
         $result = $profile->results[0];
         $request['txtNama'] = $result->name->first . ' ' . $result->name->last;
-        $request['txtEmail'] = str_replace(' ', '', $request['textNama']) . mt_rand() . $this->domainList[mt_rand(0, count($this->domainList) - 1)];
+        $request['txtEmail'] = str_replace(' ', '', $request['txtNama']) . mt_rand() . $this->domainList[mt_rand(0, count($this->domainList) - 1)];
         $request['txtPassword'] = $result->login->username;
         $request['txtConfPassword'] = $request['txtPassword'];
         $request['txtNoHP'] = '082' . $randomNumber(9);
