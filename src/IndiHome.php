@@ -158,7 +158,3 @@ trait Request {
         return $this;
     }
 }
-
-# run like this :)
-$indihome = new IndiHome();
-$indihome->run(1, true);
