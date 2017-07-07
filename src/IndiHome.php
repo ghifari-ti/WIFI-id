@@ -32,8 +32,11 @@ class IndiHome {
             echo $this->subcribe();
     }
     public function subcribe() {
-        $details = $this->generateSubcribeDetails();
-        $this->http($this->indiHome_Subcribe)->isPOST($details)->http($this->indiHome_Subcribe);
+        $this->http($this->indiHome_Subcribe);
+        preg_match_all("/name=\"csrf_test_name\" value=\"(.*)\"/", $this->_response, $out);
+        if(empty($out[1][0])) throw new Exception("No security (CSRF) found, are you okay?");
+        $details = $this->generateSubcribeDetails($out[1][0]);
+        $this->isPOST($details)->http($this->indiHome_Subcribe);
         # DEBUG
         if($this->debug) file_put_contents("a.txt", $this->_response);
         if(strpos($this->_response, 'html') or empty($this->_header['location'][0])) return 'Cannot subcribe using your details!';
@@ -44,15 +47,15 @@ class IndiHome {
         # DEBUG
         if($this->debug) echo json_encode($this->_header) . "\n";
         if(!empty($this->_header['location'][0])) {
-            $inbox = $this->http(sprintf($this->indiHome_AjaxLogin, $details['txtNama']))->http($this->indiHome_Registration)->http($this->indiHome_Inbox)->_response;
-            preg_match_all("/style=\"color:black\">(.*)<\/a>/", $inbox, $out);
+            $inbox = $this->http(sprintf($this->indiHome_AjaxLogin, $details['textNama']))->http($this->indiHome_Registration)->http($this->indiHome_Inbox)->_response;
+            preg_match_all("/style=\"color:black\">(.*)<\/a>/i", $inbox, $out);
             if(empty($out[1][0])) throw new Exception("Umm... inbox is empty?");
             return $out[1][0];
         } else throw new Exception("Can't submit OTP Password, brauh!");
     }
-    private function generateSubcribeDetails() {
+    private function generateSubcribeDetails($t) {
         $request = array(
-            'ci_csrf_token' => '',
+            'csrf_test_name' => $t,
             'txtNama' => '',
             'txtEmail' => '',
             'txtPassword' => '',
@@ -68,7 +71,7 @@ class IndiHome {
         if(empty($profile)) throw new Exception("Can't get profile information.");
         $result = $profile->results[0];
         $request['txtNama'] = $result->name->first . ' ' . $result->name->last;
-        $request['txtEmail'] = str_replace(' ', '', $request['txtNama']) . mt_rand() . $this->domainList[mt_rand(0, count($this->domainList) - 1)];
+        $request['txtEmail'] = str_replace(' ', '', $request['textNama']) . mt_rand() . $this->domainList[mt_rand(0, count($this->domainList) - 1)];
         $request['txtPassword'] = $result->login->username;
         $request['txtConfPassword'] = $request['txtPassword'];
         $request['txtNoHP'] = '082' . $randomNumber(9);
@@ -83,11 +86,11 @@ class IndiHome {
         if(empty($emailResponse)) throw new Exception("Failed connect to email services.");
         $email = "";
         foreach($emailResponse as $emails) {
-            if($emails->mail_subject == 'Verifikasi MyIndihome') {
+            if($emails->mail_subject == 'Verifikasi myIndiHome') {
                 $email = $emails->mail_text_only; break;
             }
         }
-        preg_match_all("/myindihome anda adalah ([0-9]+[^\ <]+)/", $email, $out);
+        preg_match_all("/myIndiHome anda adalah ([0-9]+[^\ <]+)/i", $email, $out);
         if(empty($out[1][0])) throw new Exception("Email found but OTP can not found, are you okay?");
         $OTP = $out[1][0];
         if(strlen($OTP) <> 4 OR !is_numeric($OTP)) throw new Exception("OTP has not valid format? ummm.");
@@ -155,3 +158,7 @@ trait Request {
         return $this;
     }
 }
+
+# run like this :)
+$indihome = new IndiHome();
+$indihome->run(1, true);
